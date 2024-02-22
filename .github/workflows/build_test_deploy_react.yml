@@ -29,10 +29,9 @@ jobs:
       - name: npm ci, build, test and coverage
         run: |
           npm ci
-          npm jsdoc
+          npm run jsdoc
           npm run build --if-present
           npm test
-          npm run jsdoc
       - name: Setup Pages
         id: pages
         uses: actions/configure-pages@v3
