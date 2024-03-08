@@ -1,0 +1,8 @@
+FROM node:20
+WORKDIR /ci_cd_final
+ENV PATH /ci_cd_final/node_modules/.bin:$PATH
+COPY package.json ./
+COPY package-lock.json ./
+RUN npm install --silent
+RUN npm install react-scripts@5.0.1 -g --silent
+EXPOSE 3000
