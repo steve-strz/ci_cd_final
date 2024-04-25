@@ -11,7 +11,8 @@ services:
       - '27017:27017'
     volumes:
       - dbdata6:/data/db
-    command: mongod --noauth
+      - ./mongod.conf:/etc/mongod.conf
+    command: mongod --noauth --config /etc/mongod.conf
     networks:
       - webappnetwork
 
