@@ -1,0 +1,7 @@
+FROM python:3.9
+WORKDIR /ci_cd_final
+ADD server.py .
+RUN pip install requests beautifulsoup4 python-dotenv
+RUN pip install mysql-connector-python fastapi uvicorn
+EXPOSE 8000
+CMD [“python”, “./server.py”] 
