@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { Snackbar } from '@mui/material';
 import IconButton from '@mui/material/IconButton';
-import CloseIcon from '@mui/icons-material/Close'
+import CloseIcon from '@mui/icons-material/Close';
+import './Form.css'
+import ReactDOM from 'react-dom';
+
+
+
 
 /** Regex rules for firstname and lastname */
 const regexNomPrenom = /^[a-zA-ZÀ-ÿ\-']+$/;
@@ -60,8 +65,26 @@ export function validateEmail(email){
  * @param {object} data Form data
  * @return {boolean} true or false
 */
-export function saveInLocalStorage(data){
+export async function saveInLocalStorage(data){
   localStorage.setItem("form", JSON.stringify(data))
+
+  try {
+    const response = await fetch('http://localhost/users/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (response.ok) {
+      console.log('user was create');
+    } else {
+      console.error('Error : user was not create');
+    }
+  } catch (error) {
+    console.error('Error creating user:', error);
+  }
 }
 
 /**
@@ -90,9 +113,13 @@ const FormValidation = () => {
   const [openSnackbar, setOpenSnackbar] = React.useState(false);
   const [msgSnackbar, setMsgSnackbar] = React.useState("");
   const [formValid, setFormValid] = useState(false);
+  const [showList, setShowList] = useState(false);
+  const [isExiste, setIsExiste] = useState(false);
 
   useEffect(() => {
+    setIsExiste(true);
     setFormValid(isFormDataCompleted(formData))
+    return () => setIsExiste(false);
   }, [formData]);
 
   const handleChange = (e) => {
@@ -101,6 +128,78 @@ const FormValidation = () => {
       ...formData,
       [name]: value,
     });
+  };
+
+
+  const getUsers = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/users/'); 
+      const data = await response.json();
+      return data; 
+    } catch (error) {
+      console.error('Error :', error);
+    }
+  };
+
+  const displayListUser = async () => {
+    const users = await getUsers();
+
+    if (isExiste) { 
+      if (users && users.length > 0) {
+        const tableRows = users.map(user => (
+          <tr key={user.id}>
+            <td>{user.lastName}</td>
+            <td>{user.firstName}</td>
+            <td>{user.birthDate}</td>
+            <td>{user.postalCode}</td>
+            <td>{user.city}</td>
+            <td>{user.email}</td>
+          </tr>
+        ));
+
+        ReactDOM.render(
+          <table>
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Date de naissance</th>
+                <th>Code postal</th>
+                <th>Ville</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody>{tableRows}</tbody>
+          </table>,
+          document.getElementById('listUser') 
+        );
+      } else {
+        ReactDOM.render(
+          <table>
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Date de naissance</th>
+                <th>Code postal</th>
+                <th>Ville</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colSpan="6">Aucun utilisateur</td>
+              </tr>
+            </tbody>
+          </table>,
+          document.getElementById('listUser') 
+        );
+      }
+    }
+  };
+
+  const handleLists = (e) => {
+    setShowList(showList ? false : displayListUser() && true);
   };
 
   const handleCloseSnackbar = (event, reason) => {
@@ -156,6 +255,7 @@ const FormValidation = () => {
   );
 
   return (
+    <div className="container">
     <form onSubmit={handleSubmit}>
       <div>
         <label htmlFor="nom">Nom:</label>
@@ -201,6 +301,11 @@ const FormValidation = () => {
         }}
       />
     </form>
+    <button onClick={handleLists}>List user</button>
+    <div id="listUser"> {/* Element with ID "listUser" */}
+        {showList}
+      </div>
+    </div>
   );
 };
 
