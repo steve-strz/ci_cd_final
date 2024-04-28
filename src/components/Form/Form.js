@@ -1,8 +1,10 @@
-import React, { useState, useEffect } from "react";
-import { Snackbar } from "@mui/material";
-import IconButton from "@mui/material/IconButton";
-import CloseIcon from "@mui/icons-material/Close";
-import { Button, Link, Typography } from "@mui/material";
+import React, { useState, useEffect } from 'react';
+import { Snackbar } from '@mui/material';
+import IconButton from '@mui/material/IconButton';
+import CloseIcon from '@mui/icons-material/Close';
+import './Form.css'
+import ReactDOM from 'react-dom';
+
 
 /** Regex rules for firstname and lastname */
 const regexNomPrenom = /^[a-zA-ZÀ-ÿ\-']+$/;
@@ -60,9 +62,27 @@ export function validateEmail(email) {
  * Function that saves form data in local storage
  * @param {object} data Form data
  * @return {boolean} true or false
- */
-export function saveInLocalStorage(data) {
-  localStorage.setItem("form", JSON.stringify(data));
+*/
+export async function saveInLocalStorage(data){
+  localStorage.setItem("form", JSON.stringify(data))
+
+  try {
+    const response = await fetch('http://localhost/users/', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    });
+
+    if (response.ok) {
+      console.log('user was create');
+    } else {
+      console.error('Error : user was not create');
+    }
+  } catch (error) {
+    console.error('Error creating user:', error);
+  }
 }
 
 /**
@@ -91,9 +111,13 @@ const FormValidation = () => {
   const [openSnackbar, setOpenSnackbar] = React.useState(false);
   const [msgSnackbar, setMsgSnackbar] = React.useState("");
   const [formValid, setFormValid] = useState(false);
+  const [showList, setShowList] = useState(false);
+  const [isExiste, setIsExiste] = useState(false);
 
   useEffect(() => {
-    setFormValid(isFormDataCompleted(formData));
+    setIsExiste(true);
+    setFormValid(isFormDataCompleted(formData))
+    return () => setIsExiste(false);
   }, [formData]);
 
   const handleChange = (e) => {
@@ -102,6 +126,78 @@ const FormValidation = () => {
       ...formData,
       [name]: value,
     });
+  };
+
+
+  const getUsers = async () => {
+    try {
+      const response = await fetch('http://localhost:3000/users/'); 
+      const data = await response.json();
+      return data; 
+    } catch (error) {
+      console.error('Error :', error);
+    }
+  };
+
+  const displayListUser = async () => {
+    const users = await getUsers();
+
+    if (isExiste) { 
+      if (users && users.length > 0) {
+        const tableRows = users.map(user => (
+          <tr key={user.id}>
+            <td>{user.lastName}</td>
+            <td>{user.firstName}</td>
+            <td>{user.birthDate}</td>
+            <td>{user.postalCode}</td>
+            <td>{user.city}</td>
+            <td>{user.email}</td>
+          </tr>
+        ));
+
+        ReactDOM.render(
+          <table>
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Date de naissance</th>
+                <th>Code postal</th>
+                <th>Ville</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody>{tableRows}</tbody>
+          </table>,
+          document.getElementById('listUser') 
+        );
+      } else {
+        ReactDOM.render(
+          <table>
+            <thead>
+              <tr>
+                <th>Nom</th>
+                <th>Prénom</th>
+                <th>Date de naissance</th>
+                <th>Code postal</th>
+                <th>Ville</th>
+                <th>Email</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td colSpan="6">Aucun utilisateur</td>
+              </tr>
+            </tbody>
+          </table>,
+          document.getElementById('listUser') 
+        );
+      }
+    }
+  };
+
+  const handleLists = (e) => {
+    setShowList(showList ? false : displayListUser() && true);
   };
 
   const handleCloseSnackbar = (event, reason) => {
@@ -157,105 +253,57 @@ const FormValidation = () => {
   );
 
   return (
-    <>
-      <Button>
-        <Link
-          to={`../UsersList/UserList`}
-          style={{ textDecoration: "none", color: "inherit" }}>
-          <Typography textAlign="center">Users list</Typography>
-        </Link>
-      </Button>
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label htmlFor="nom">Nom:</label>
-          <input
-            type="text"
-            id="nom"
-            name="nom"
-            value={formData.nom}
-            onChange={handleChange}
-          />
-          {errors.nom && <span style={{ color: "red" }}>{errors.nom}</span>}
-        </div>
-        <div>
-          <label htmlFor="prenom">Prénom:</label>
-          <input
-            type="text"
-            id="prenom"
-            name="prenom"
-            value={formData.prenom}
-            onChange={handleChange}
-          />
-          {errors.prenom && (
-            <span style={{ color: "red" }}>{errors.prenom}</span>
-          )}
-        </div>
-        <div>
-          <label htmlFor="dateNaissance">Date de naissance:</label>
-          <input
-            type="date"
-            id="dateNaissance"
-            name="dateNaissance"
-            value={formData.dateNaissance}
-            onChange={handleChange}
-          />
-          {errors.dateNaissance && (
-            <span style={{ color: "red" }}>{errors.dateNaissance}</span>
-          )}
-        </div>
-        <div>
-          <label htmlFor="codePostal">Code Postal:</label>
-          <input
-            type="text"
-            id="codePostal"
-            name="codePostal"
-            value={formData.codePostal}
-            onChange={handleChange}
-          />
-          {errors.codePostal && (
-            <span style={{ color: "red" }}>{errors.codePostal}</span>
-          )}
-        </div>
-        <div>
-          <label htmlFor="ville">Ville:</label>
-          <input
-            type="text"
-            id="ville"
-            name="ville"
-            value={formData.ville}
-            onChange={handleChange}
-          />
-        </div>
-        <div>
-          <label htmlFor="email">Email:</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-          />
-          {errors.email && <span style={{ color: "red" }}>{errors.email}</span>}
-        </div>
-        <button disabled={!formValid} type="submit">
-          Soumettre
-        </button>
-        <Snackbar
-          open={openSnackbar}
-          autoHideDuration={6000}
-          onClose={handleCloseSnackbar}
-          message={msgSnackbar}
-          action={action}
-          ContentProps={{
-            style: {
-              color: "white",
-              backgroundColor:
-                Object.keys(errors).length === 0 ? "green" : "red",
-            },
-          }}
-        />
-      </form>
-    </>
+    <div className="container">
+    <form onSubmit={handleSubmit}>
+      <div>
+        <label htmlFor="nom">Nom:</label>
+        <input type="text" id="nom" name="nom" value={formData.nom} onChange={handleChange} />
+        {errors.nom && <span style={{ color: 'red' }}>{errors.nom}</span>}
+      </div>
+      <div>
+        <label htmlFor="prenom">Prénom:</label>
+        <input type="text" id="prenom" name="prenom" value={formData.prenom} onChange={handleChange} />
+        {errors.prenom && <span style={{ color: 'red' }}>{errors.prenom}</span>}
+      </div>
+      <div>
+        <label htmlFor="dateNaissance">Date de naissance:</label>
+        <input type="date" id="dateNaissance" name="dateNaissance" value={formData.dateNaissance} onChange={handleChange} />
+        {errors.dateNaissance && <span style={{ color: 'red' }}>{errors.dateNaissance}</span>}
+      </div>
+      <div>
+        <label htmlFor="codePostal">Code Postal:</label>
+        <input type="text" id="codePostal" name="codePostal" value={formData.codePostal} onChange={handleChange} />
+        {errors.codePostal && <span style={{ color: 'red' }}>{errors.codePostal}</span>}
+      </div>
+      <div>
+        <label htmlFor="ville">Ville:</label>
+        <input type="text" id="ville" name="ville" value={formData.ville} onChange={handleChange} />
+      </div>
+      <div>
+        <label htmlFor="email">Email:</label>
+        <input type="email" id="email" name="email" value={formData.email} onChange={handleChange} />
+        {errors.email && <span style={{ color: 'red' }}>{errors.email}</span>}
+      </div>
+      <button disabled={!formValid} type="submit">Soumettre</button>
+      <Snackbar
+        open={openSnackbar}
+        autoHideDuration={6000}
+        onClose={handleCloseSnackbar}
+        message={msgSnackbar}
+        action={action}
+        ContentProps={{
+          style: {
+            color: 'white',
+            backgroundColor: Object.keys(errors).length === 0 ? 'green' : 'red'
+          }
+        }}
+      />
+    </form>
+    <button onClick={handleLists}>List user</button>
+    <div id="listUser"> {/* Element with ID "listUser" */}
+        {showList}
+      </div>
+    </div>
   );
 };
 
